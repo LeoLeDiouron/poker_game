@@ -4,7 +4,38 @@ class Player {
         this.name = name;
         this.hand = null;
         this.cash = 100;
+        this.bet = 0;
+        this.fold = false;
+        this.action = ''
         this.is_ready = false;
+
+        this.setAction('waiting...');
+    }
+
+    setBet(bet) {
+        this.bet = bet;
+    }
+
+    getBet() {
+        return this.bet;
+    }
+
+    setFold(status) {
+        this.fold = status;
+    }
+
+    getFold() {
+        return this.fold;
+    }
+
+    increaseBet(bet) {
+        if (this.cash - bet >= 0) {
+            this.bet += bet;
+            this.cash -= bet;
+            return true;
+        } else {
+            return false;
+        }
     }
 
     setHand(hand) {
@@ -46,6 +77,14 @@ class Player {
 
     getCash() {
         return this.cash;
+    }
+
+    setAction(action) {
+        this.action = ' : ' + action;
+    }
+
+    getAction() {
+        return this.action;
     }
 
 }

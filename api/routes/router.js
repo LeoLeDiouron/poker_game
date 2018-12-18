@@ -36,8 +36,54 @@ router.get('/join', (req, res) => {
     });
 });
 
-router.get('/game', (req, res) => {
+router.get('/infos_game', (req, res) => {
     infos_games = game(req, res, infos_games);
+});
+
+router.post('/follow', (req, res) => {
+    var room_id = req.query.room_id;
+    var player_id = req.query.player_id;
+
+    if (infos_games[room_id].isRoundOver() == false) {
+        var bet = infos_games[room_id].getRound().getBet() - infos_games[room_id].getPlayer(player_id).getBet();
+        if (infos_games[room_id].getPlayer(player_id).increaseBet(bet) == true) {
+            infos_games[room_id].getRound().increasePot(bet);
+            infos_games[room_id].getRound().nextPlayer(infos_games[room_id].getPlayers());
+            infos_games[room_id].getPlayer(player_id).setAction('follow');
+        }
+        infos_games[room_id].checkEndRound();
+    }
+    res.status(200).json({'message':'OK'});
+});
+
+router.post('/fold', (req, res) => {
+    var room_id = req.query.room_id;
+    var player_id = req.query.player_id;
+
+    if (infos_games[room_id].isRoundOver() == false) {
+        infos_games[room_id].getPlayer(player_id).setFold(true);
+        infos_games[room_id].checkEndRound();
+        infos_games[room_id].getPlayer(player_id).setAction('fold');
+    }
+    res.status(200).json({'message':'OK'});
+});
+
+router.post('/raise', (req, res) => {
+    var room_id = req.query.room_id;
+    var player_id = req.query.player_id;
+    var raise = parseInt(req.query.raise);
+
+    if (infos_games[room_id].isRoundOver() == false) {
+        var bet = infos_games[room_id].getRound().getBet() - infos_games[room_id].getPlayer(player_id).getBet() + raise;
+        if (infos_games[room_id].getPlayer(player_id).increaseBet(bet) == true) {
+            infos_games[room_id].getRound().increaseBet(raise);
+            infos_games[room_id].getRound().increasePot(bet);
+            infos_games[room_id].getRound().nextPlayer(infos_games[room_id].getPlayers());
+            infos_games[room_id].getPlayer(player_id).setAction('raise by ' + raise);
+        }
+        infos_games[room_id].checkEndRound();
+    }
+    res.status(200).json({'message':'OK'});
 });
 
 module.exports = router;

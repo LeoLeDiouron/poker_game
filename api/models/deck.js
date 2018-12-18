@@ -13,6 +13,7 @@ class Deck {
             }
         })
         this.shuffle();
+        //this.showDeck();
     }
 
     shuffle() {
@@ -37,6 +38,8 @@ class Deck {
                 return [];
             nb_cards--;
         }
+        if (cards.length == 1)
+            return cards[0];
         return cards;
     }
 
