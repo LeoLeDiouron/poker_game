@@ -34,12 +34,10 @@ function checkPair(cards_board, cards_hand) {
 
     if (cards_hand[0].getValue() == cards_hand[1].getValue()) {
         pair = (pair < cards_hand[0].getValue()) ? cards_hand[0].getValue() : pair;
-        console.log('pair in hand : ' + cards_hand[0].getValue());
     }
     cards_hand.forEach(card_hand => {
         cards_board.forEach(card_board => {
             if (card_hand.getValue() == card_board.getValue()) {
-                console.log('pair in board : ' + card_hand.getValue());
                 pair = (pair < card_hand.getValue()) ? card_hand.getValue() : pair;
             }
         });
@@ -54,7 +52,6 @@ function checkBrelan(cards_board, cards_hand) {
     if (cards_hand[0].getValue() == cards_hand[1].getValue()) {
         cards_board.forEach(card_board => {
             if (cards_hand[0].getValue() == card_board.getValue()) {
-                console.log('brelan in hand : ' + cards_hand[0].getValue());
                 brelan = (brelan < cards_hand[0].getValue()) ? cards_hand[0].getValue() : brelan;
             }
         })
@@ -62,19 +59,20 @@ function checkBrelan(cards_board, cards_hand) {
         cards_hand.forEach(card_hand => {
             var occurence = {};
             cards_board.forEach(card_board => {
-                if (card_hand.getValue() == card_board.getValue()) 
-                    occurence[card_hand.getValue()]++;
+                if (card_hand.getValue() == card_board.getValue()) {
+                    if (card_hand.getValue() in occurence)
+                        occurence[card_hand.getValue().toString()]++;
+                    else 
+                        occurence[card_hand.getValue().toString()] = 1;
+                }
             });
             for (value in occurence) {
-                if (occurence[value] == 3) {
-                    console.log('brelan in board : ' + value);
+                if (occurence[value] == 2) {
                     brelan = (brelan < value) ? value : brelan;
                 }
             }
         });
     }
-    if (brelan != 0)
-        console.log('best brelan is ' + brelan);
 
     return brelan;
 }
@@ -85,12 +83,12 @@ function checkDoublePair(cards_board, cards_hand) {
 
     cards_board.forEach(card_board => {
         if (cards_hand[0].getValue() == card_board.getValue()) {
-            first_pair = cards_board[0].getValue();
+            first_pair = cards_hand[0].getValue();
         }
     });
     cards_board.forEach(card_board => {
         if (cards_hand[1].getValue() == card_board.getValue()) {
-            second_pair = cards_board[1].getValue();
+            second_pair = cards_hand[1].getValue();
         }
     });
     if (first_pair != 0 && second_pair != 0 && first_pair < second_pair) {

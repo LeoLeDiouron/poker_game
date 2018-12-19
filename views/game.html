@@ -16,8 +16,11 @@
 <script type="text/javascript">
 
     const colors = ['heart', 'diamond', 'club', 'spade'];
+    const name_of_card = ['2','3','4','5','6','7','8','9','10','jake','queen','king','ace']
 
-    const url_api = 'http://localhost:3000/api/v1/';
+    //const url_api = 'http://localhost:3000/api/v1/';
+    const url_api = 'http://192.168.1.13:3000/api/v1/';
+
     const url_begin = url_api + 'begin';
     const url_join = url_api + 'join';
     const url_infos_game = url_api + 'infos_game';
@@ -51,6 +54,7 @@
     var text_my_turn = null;
     var text_money_raise = null;
     var text_current_bet = null;
+    var text_best_combination = null;
 
     var background = null;
 
@@ -62,6 +66,7 @@
     var round_id = -1;
     var cash = 0;
     var pot = 0;
+    var best_combination = {'type':'', 'value':0};
 
     var current_bet = 0;
     var money_raise = 1;
@@ -104,14 +109,14 @@
             var response = sendRequestGet(url_infos_game + "?room_id=" + room_id + '&player_id=' + player_id);
             console.log(JSON.stringify(response));
             my_turn = false;
-            if (round_id != response['round_id'])
-                round_id = response['round_id'];
             if ('round' in response) {
                 if (response['round']['current_player'] == player_id)
                     my_turn = true;
                 // TODO : faire un system de responsive en fonction de la taille de la fenetre
                 updateDatas(response);
             }
+            if (round_id != response['round_id'])
+                round_id = response['round_id'];
         }
         if (text_money_raise != null) {
             text_money_raise.destroy();
@@ -186,7 +191,7 @@
             if (text_current_bet != null)
                 text_current_bet.destroy();
             current_bet = response['round']['current_bet'];
-            text_current_bet = game.add.bitmapText(window.innerWidth - 400, window.innerHeight - 250, 'desyrel', 'current bet is ' + current_bet, 50);
+            text_current_bet = game.add.bitmapText(window.innerWidth - 400, window.innerHeight - 300, 'desyrel', 'current bet is ' + current_bet, 50);
             
         }
     }
@@ -195,7 +200,7 @@
         var idx = 0;
         var cards_board = response['round']['board'];
 
-        if (cards_board.length != gui_cards_board.length) {
+        if (cards_board.length != gui_cards_board.length || round_id != response['round_id']) {
             gui_cards_board.forEach(_gui_card_board => {
                 _gui_card_board.destroy();
             });
@@ -252,11 +257,27 @@
         });
     }
 
+    function displayBestCombination(response) {
+        if ((text_best_combination == null && response['best_combination']['type'] != '') ||
+            (best_combination['type'] != response['best_combination']['type'] || best_combination['value'] != response['best_combination']['value'])) {
+            if (text_best_combination != null)
+                text_best_combination.destroy();
+            best_combination = response['best_combination'];
+            var combi = '';
+            if (best_combination['type'] != 'double_pair')
+                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']-2];
+            else
+                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']['first_pair']-2] + ' / ' + name_of_card[best_combination['value']['second_pair']-2];
+            text_best_combination = game.add.bitmapText(window.innerWidth / 2 - 200, window.innerHeight - 400, 'desyrel', 'your best combination is : ' + combi, 40)
+        }
+    }
+
     function updateRound(response) {
         displayRules(response);
         displayBoard(response);
         displayHand(response);
         displayCurrentBet(response);
+        displayBestCombination(response);
         if (response['round']['pot'] != pot) {
             if (gui_pot != null)
                 gui_pot.destroy();

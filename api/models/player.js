@@ -8,6 +8,7 @@ class Player {
         this.fold = false;
         this.action = ''
         this.is_ready = false;
+        this.best_combination = {'type':'', 'value':0}
 
         this.setAction('waiting...');
     }
@@ -26,6 +27,14 @@ class Player {
 
     getFold() {
         return this.fold;
+    }
+
+    setBestCombination(best_combination) {
+        this.best_combination = best_combination;
+    }
+
+    getBestCombination() {
+        return this.best_combination;
     }
 
     increaseBet(bet) {

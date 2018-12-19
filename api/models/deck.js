@@ -13,6 +13,8 @@ class Deck {
             }
         })
         this.shuffle();
+
+        //this.giveBrelan();
         //this.showDeck();
     }
 
@@ -48,6 +50,21 @@ class Deck {
             var new_place = Math.floor(Math.random() * this.cards.length);
             this.cards.splice(new_place, 0, card);
         })
+    }
+
+    giveBrelan() {
+
+        this.cards.push(new Card('diamond',3));
+        this.cards.push(new Card('diamond',5));
+
+        this.cards.push(new Card('diamond',4));
+        this.cards.push(new Card('club',3));
+        
+        this.cards.push(new Card('heart',3));
+        this.cards.push(new Card('spade',6));
+        this.cards.push(new Card('heart',4));
+
+
     }
 
 }

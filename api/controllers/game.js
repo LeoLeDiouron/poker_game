@@ -3,9 +3,9 @@ function game(req, res, infos_games) {
     var room_id = req.query.room_id;
     var player_id = req.query.player_id;
 
-    if (!room_id in infos_games) {
+    if (infos_games.hasOwnProperty(room_id) == false) {
         console.log('Room id ' + room_id + ' doesn\'t exist !');
-        res.status(500);
+        res.status(200).json({});
         return infos_games;
     }
 
@@ -76,6 +76,7 @@ function infosGameRound(req, res, infos_games) {
         'hand': hand,
         'round': round,
         'cash': infos_games[room_id].getPlayer(player_id).getCash(),
+        'best_combination': infos_games[room_id].getPlayer(player_id).getBestCombination()
     });
     return infos_games;
 }

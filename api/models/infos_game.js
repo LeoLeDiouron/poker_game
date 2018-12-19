@@ -3,6 +3,7 @@ var Hand = require('./hand');
 var Round = require('./round');
 
 var algorithmCombination = require('../controllers/algorithm_combination');
+var compareCombination = require('../controllers/compare_combination');
 
 class InfosGame {
 
@@ -20,9 +21,11 @@ class InfosGame {
         this.deck = new Deck();
         this.roundOver = false;
         this.round = new Round(this.deck.giveCards(3));
+        this.giveHands();
 
         this.players.forEach(player => {
             player.setFold(false);
+            player.setAction('waiting...');
         })
     }
 
@@ -64,6 +67,10 @@ class InfosGame {
         for (var i = 0; i < this.players.length; i++) {
             this.players[i].setHand(new Hand(this.deck.giveCards(2)));
         }
+        this.players.forEach(player => {
+            player.setFold(false);
+            player.setBestCombination(algorithmCombination(this.round.getBoard().getCards(), player.getHand().getCards()));
+        })
     }
 
     isRoundOver() {
@@ -72,26 +79,42 @@ class InfosGame {
 
     checkEndRound() {
         console.log('check End Round');
-
-        this.players.forEach(player => {
-            console.log('player : ' + player.getName());
-            algorithmCombination(this.round.getBoard().getCards(), player.getHand().getCards());
-        })
-
         if (this.checkPlayersFold() == true)
             return;
         if (this.players[this.round.getCurrentPlayer()].getBet() == this.round.getBet() && this.round.isCompletedStep() == true) {
-            if (this.round.isOver() == false)
+            if (this.round.isOver() == false) {
                 this.round.nextStep(this.players, this.deck.giveCards(1));
+                this.players.forEach(player => {
+                    player.setBestCombination(algorithmCombination(this.round.getBoard().getCards(), player.getHand().getCards()));
+                })
+            }
             else {
-                this.roundOver = true;
-                console.log('End of the round : 5 cards');
+                this.comparisonEndRound();
             }
             this.players.forEach(player => {
                 player.setBet(0);
             });
-        }
-        
+        } 
+    }
+
+    comparisonEndRound() {
+        var winners = compareCombination(this.players);
+        var winner_names = '';
+        this.roundOver = true;
+
+        winners.forEach(winner => {
+            winner_names += winner.getName() + ' ';
+        })
+        winner_names = winner_names.substring(0, winner_names.length - 1);
+        console.log('End of the round : 5 cards');
+        console.log('Winner is ' + winner_names);
+        this.players.forEach(player => {
+            if (player.getName() == winners[0].getName()) {
+                this.winner = player.getName();
+                player.addCash(this.round.getPot());
+                this.newRound();
+            }
+        });
     }
 
     checkPlayersFold() {
@@ -109,7 +132,6 @@ class InfosGame {
                     this.winner = player.getName();
                     player.addCash(this.round.getPot());
                     this.newRound();
-                    this.giveHands();
                     return;
                 }
             })
