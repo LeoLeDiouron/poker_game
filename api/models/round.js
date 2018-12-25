@@ -13,11 +13,26 @@ class Round {
         this.little_blind = BLIND / 2;
         this.big_blind = BLIND;
         this.current_player = 0;
+        this.winner = '';
+        this.winner_last_player = false;
         this.bet = 0;
     }
 
     getId() {
         return this.id;
+    }
+
+    setWinner(winner, last_player) {
+        this.winner = winner;
+        this.winner_last_player = last_player;
+    }
+
+    getStatusWinner() {
+        return this.winner_last_player;
+    }
+    
+    getWinner() {
+        return this.winner;
     }
 
     isCompletedStep() {
@@ -90,6 +105,7 @@ class Round {
             this.is_over = true;
         }
     }
+
 
 }
 

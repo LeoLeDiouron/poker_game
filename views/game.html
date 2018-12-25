@@ -18,15 +18,22 @@
     const colors = ['heart', 'diamond', 'club', 'spade'];
     const name_of_card = ['2','3','4','5','6','7','8','9','10','jake','queen','king','ace']
 
-    //const url_api = 'http://localhost:3000/api/v1/';
-    const url_api = 'http://192.168.1.13:3000/api/v1/';
+    const url_api = 'http://localhost:3000/api/v1/';
+    //const url_api = 'http://192.168.1.13:3000/api/v1/';
 
-    const url_begin = url_api + 'begin';
-    const url_join = url_api + 'join';
+    const url_begin = url_api + 'new_room';
+    const url_join = url_api + 'join_room';
     const url_infos_game = url_api + 'infos_game';
     const url_fold = url_api + 'fold';
     const url_follow = url_api + 'follow';
     const url_raise = url_api + 'raise';
+    const url_start = url_api + 'start';
+
+    const small_text = 15;
+    const medium_text = 30;
+    const big_text = 50;
+
+    const padding = 15;
 
     var game = new Phaser.Game(window.innerWidth, window.innerHeight, Phaser.AUTO, 'poker', { preload: preload, create: create, update: update });
     
@@ -38,9 +45,10 @@
     var button_fold = null;
     var button_follow = null;
     var button_raise = null;
+    var button_ready = null;
 
-    var arrow_up = null;
-    var arrow_down = null;
+    var plus = null;
+    var minus = null;
 
     var input_room_id = null;
 
@@ -55,11 +63,14 @@
     var text_money_raise = null;
     var text_current_bet = null;
     var text_best_combination = null;
+    var text_winner = null;
+    var text_winner_2 = null;
 
     var background = null;
 
     var begin_game = false;
     var my_turn = false;
+    var is_end = false;
 
     var room_id = '';
     var player_id = '';
@@ -83,9 +94,10 @@
         game.load.image('button_fold', 'assets/images/button_fold.png');
         game.load.image('button_follow', 'assets/images/button_follow.png');
         game.load.image('button_raise', 'assets/images/button_raise.png');
-        game.load.image('arrow_up', 'assets/images/arrow_up.png');
-        game.load.image('arrow_down', 'assets/images/arrow_down.png');
-        game.load.bitmapFont('desyrel', 'assets/fonts/desyrel.png', 'assets/fonts/desyrel.xml');
+        game.load.image('button_ready', 'assets/images/button_ready.png');
+        game.load.image('plus', 'assets/images/plus.png');
+        game.load.image('minus', 'assets/images/minus.png');
+        game.load.bitmapFont('gem', 'assets/fonts/gem.png', 'assets/fonts/gem.xml');
         colors.forEach(color => {
             for(var i=2; i<15; i++)
                 game.load.image(i + '_' + color, 'assets/images/cards/' + color + '/' + i + '.png');
@@ -107,20 +119,18 @@
     function update () {
         if (idx_frame % 30 == 0 && player_id != '') {
             var response = sendRequestGet(url_infos_game + "?room_id=" + room_id + '&player_id=' + player_id);
-            console.log(JSON.stringify(response));
+            //console.log(JSON.stringify(response));
             my_turn = false;
-            if ('round' in response) {
-                if (response['round']['current_player'] == player_id)
-                    my_turn = true;
-                // TODO : faire un system de responsive en fonction de la taille de la fenetre
-                updateDatas(response);
-            }
+            // TODO : faire un system de responsive en fonction de la taille de la fenetre
+            updateDatas(response);
             if (round_id != response['round_id'])
                 round_id = response['round_id'];
         }
         if (text_money_raise != null) {
             text_money_raise.destroy();
-            text_money_raise = game.add.bitmapText(window.innerWidth - 330 + button_raise.width, window.innerHeight - 150, 'desyrel', money_raise, 50);
+            text_money_raise = game.add.bitmapText(0, 0, 'gem', money_raise, medium_text);
+            text_money_raise.centerX = plus.centerX + ((minus.centerX - plus.centerX) / 2);
+            text_money_raise.centerY = plus.centerY;
         }
         idx_frame++;
     }
@@ -165,9 +175,9 @@
 
     function displayInfosRoom() {
         if (gui_room_id == null) {
-            gui_room_id = game.add.bitmapText(10, 10, 'desyrel', 'code : ' + room_id, 50);
-            gui_player = game.add.bitmapText(10, window.innerHeight/2 - 50, 'desyrel', player_id + ' (' + cash + ')', 50);
-            //game.add.bitmapText(10, window.innerHeight/2 + 20, 'desyrel', '______', 50);
+            gui_room_id = game.add.bitmapText(padding, 10, 'gem', 'code : ' + room_id, medium_text);
+            //gui_player = game.add.bitmapText(padding, window.innerHeight/2 - 50, 'gem', player_id + ' (' + cash + ')', medium_text);
+            //game.add.bitmapText(padding, window.innerHeight/2 + 20, 'gem', '______', 50);
         }
     }
 
@@ -175,13 +185,19 @@
         if (button_fold == null) {
             button_follow = game.add.button(window.innerWidth - 400, window.innerHeight - 200, 'button_fold', fold);
             button_raise = game.add.button(window.innerWidth - 400, window.innerHeight - 150, 'button_raise', raise);
-            arrow_up = game.add.button(window.innerWidth - 380 + button_raise.width, window.innerHeight - 150, 'arrow_up', increaseMoneyRaise);
-            arrow_down = game.add.button(window.innerWidth - 270 + button_raise.width, window.innerHeight - 150, 'arrow_down', decreaseMoneyRaise);
-            text_money_raise = game.add.bitmapText(window.innerWidth - 330 + button_raise.width, window.innerHeight - 160, 'desyrel', money_raise, 50);
-            arrow_up.width = 40;
-            arrow_up.height = 40;
-            arrow_down.width = 40;
-            arrow_down.height = 40;
+            plus = game.add.button(window.innerWidth - 380 + button_raise.width, window.innerHeight - 150, 'plus', increaseMoneyRaise);
+            minus = game.add.button(window.innerWidth - 270 + button_raise.width, window.innerHeight - 150, 'minus', decreaseMoneyRaise);
+            text_money_raise = game.add.bitmapText(0, 0, 'gem', money_raise, big_text);
+            text_money_raise.centerX = plus.centerX + ((minus.centerX - plus.centerX) / 2);
+            text_money_raise.centerY = plus.centerY;
+            console.log('1- ' + plus.x);
+            console.log('2- ' + (minus.centerX - plus.centerX) / 2)
+            console.log('3 - ' + plus.centerX + ' , ' + minus.centerX);
+            console.log('X: ' + text_money_raise.centerX + ', Y:' + text_money_raise.centerY);
+            plus.width = 40;
+            plus.height = 40;
+            minus.width = 40;
+            minus.height = 40;
             button_fold = game.add.button(window.innerWidth - 400, window.innerHeight - 100, 'button_follow', follow);
         }
     }
@@ -191,7 +207,7 @@
             if (text_current_bet != null)
                 text_current_bet.destroy();
             current_bet = response['round']['current_bet'];
-            text_current_bet = game.add.bitmapText(window.innerWidth - 400, window.innerHeight - 300, 'desyrel', 'current bet is ' + current_bet, 50);
+            text_current_bet = game.add.bitmapText(window.innerWidth - 400, window.innerHeight - 250, 'gem', 'current bet is ' + current_bet, medium_text);
             
         }
     }
@@ -240,19 +256,27 @@
 
     function displayInfosPlayers(response) {
         var players = response['players'];
-        var idx = 1;
+        var position = 60;
+
+        if (response['cash'] != cash || gui_player == null || gui_player.y != window.innerHeight - (players.length * 60)) {
+            if (gui_player != null)
+                gui_player.destroy();
+            cash = response['cash'];
+            gui_player = game.add.bitmapText(padding, window.innerHeight - (players.length * 60), 'gem', player_id + ' (' + cash + ')', medium_text);
+        }
 
         gui_players.forEach(_gui_player => {
             _gui_player.destroy();
         });
         gui_players = [];
+
         players.forEach(_player => {
             if (_player.id != player_id) {
                 var action = _player.action;
-                if (_player.id == response['round']['current_player'])
+                if ('round' in response && _player.id == response['round']['current_player'])
                     action = ' : playing...';
-                gui_players.push(game.add.bitmapText(10, window.innerHeight/2 + idx * 60, 'desyrel', _player.id + ' (' + _player.cash + ')' + _player.action, 50));
-                idx++;
+                gui_players.push(game.add.bitmapText(padding, window.innerHeight - (players.length * 60) + position, 'gem', _player.id + ' (' + _player.cash + ')' + _player.action, medium_text));
+                position += 60;
             }
         });
     }
@@ -268,65 +292,127 @@
                 combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']-2];
             else
                 combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']['first_pair']-2] + ' / ' + name_of_card[best_combination['value']['second_pair']-2];
-            text_best_combination = game.add.bitmapText(window.innerWidth / 2 - 200, window.innerHeight - 400, 'desyrel', 'your best combination is : ' + combi, 40)
+            text_best_combination = game.add.bitmapText(window.innerWidth / 2 - 200, window.innerHeight - 400, 'gem', 'your best combination is : ' + combi, medium_text);
+            //console.log('window x : ' + window.innerHeight / 2 + ' -> text width : ' + text_best_combination.width / 2);
+            text_best_combination.centerX = window.innerWidth / 2;
         }
     }
 
+    function displayStartRound() {
+        if (button_ready == null) {
+            button_ready = game.add.button(window.innerWidth / 2, window.innerHeight - 200, 'button_ready', startRound);
+        }
+    }
+
+    function displayEnd(response) {
+
+        if (text_my_turn != null) {
+            text_my_turn.destroy();
+            text_my_turn = null;
+        }
+
+        button_follow.destroy();
+        button_fold.destroy();
+        button_raise.destroy();
+        minus.destroy();
+        plus.destroy();
+        text_money_raise.destroy();
+        text_current_bet.destroy();
+        text_best_combination.destroy();
+        gui_cards_board.forEach(gui_card_board => { gui_card_board.destroy(); });
+        gui_cards_hand.forEach(gui_card__hand => { gui_card__hand.destroy(); });
+
+        button_follow = null;
+        button_fold = null;
+        button_raise = null;
+        minus = null;
+        plus = null;
+        text_money_raise = null;
+        text_current_bet = null;
+        text_best_combination = null;
+        gui_cards_board = [];
+        gui_cards_hand = [];
+
+        if (text_winner == null && text_winner_2 == null) {
+            text_winner = game.add.bitmapText(window.innerWidth/2 - 150, window.innerHeight/2 - 100, 'gem', response['round']['winner']['name'] + ' won the round', big_text);
+            if ('combination' in response['round']['winner'])
+                text_winner_2 = game.add.bitmapText(window.innerWidth/2 - 150, window.innerHeight/2 + 50, 'gem', 'with a ' + response['round']['winner']['combination'], medium_text);
+            else
+                text_winner_2 = game.add.bitmapText(window.innerWidth/2 - 150, window.innerHeight/2 + 50, 'gem', 'because he is the last player', medium_text); 
+        }
+
+        is_end = true;
+    }
+
     function updateRound(response) {
+        
         displayRules(response);
         displayBoard(response);
         displayHand(response);
         displayCurrentBet(response);
         displayBestCombination(response);
+
         if (response['round']['pot'] != pot) {
             if (gui_pot != null)
                 gui_pot.destroy();
             pot = response['round']['pot'];
-            gui_pot = game.add.bitmapText(10, 50, 'desyrel', 'pot : ' + pot, 50);
-        }
-        if (response['cash'] != cash) {
-            if (gui_player != null)
-                gui_player.destroy();
-            cash = response['cash'];
-            gui_player = game.add.bitmapText(10, window.innerHeight/2 - 50, 'desyrel', player_id + ' (' + cash + ')', 50);
+            gui_pot = game.add.bitmapText(padding, 50, 'gem', 'pot : ' + pot, medium_text);
         }
         if (text_my_turn != null && my_turn == false) {
             text_my_turn.destroy();
             text_my_turn = null;
         }
         if (text_my_turn == null && my_turn == true) {
-            text_my_turn = game.add.bitmapText(window.innerWidth/2 - 250, 30, 'desyrel', 'your turn to play !', 70);
+            text_my_turn = game.add.bitmapText(window.innerWidth/2 - 250, 30, 'gem', 'your turn to play !', big_text);
+        }
+
+        if (button_ready != null) {
+            button_ready = null;
+        }
+
+        if (text_winner != null && text_winner_2 != null) {
+            text_winner.destroy();
+            text_winner_2.destroy();
+            text_winner = null;
+            text_winner_2 = null;
         }
     }
 
     function updateDatas(response) {
-        if (response['round'] != {})
+        if (response['status'] == 0) {
+            displayStartRound();
+        } else if ('round' in response && response['status'] == 1) {
+            is_end = false;
+            if (response['round']['current_player'] == player_id)
+                my_turn = true;
             updateRound(response);
-        
+        } else if (response['status'] == 2 && is_end == false) {
+            updateRound(response);
+            displayStartRound();
+            displayEnd(response);
+        }
         displayInfosPlayers(response);
-        
     }
-
     /* _________________________________ ACTIONS _________________________________ */
 
     function fold() {
         if (my_turn == true) {
             console.log('I fold !');
-            sendRequestPost(url_fold  + "?room_id=" + room_id + '&player_id=' + player_id);
+            sendRequestPost(url_fold  + "?room_id=" + room_id + '&player_id=' + player_id, null);
         }
     }
 
     function follow() {
         if (my_turn == true) {
             console.log('I follow !');
-            sendRequestPost(url_follow  + "?room_id=" + room_id + '&player_id=' + player_id);
+            sendRequestPost(url_follow  + "?room_id=" + room_id + '&player_id=' + player_id, null);
         }
     }
 
     function raise() {
         if (my_turn == true) {
             console.log('I raise by ' + money_raise + '!');
-            sendRequestPost(url_raise  + "?room_id=" + room_id + '&player_id=' + player_id + '&raise=' + money_raise);
+            sendRequestPost(url_raise  + "?room_id=" + room_id + '&player_id=' + player_id + '&raise=' + money_raise, null);
             money_raise = 1;
         }
     }
@@ -339,6 +425,11 @@
     function decreaseMoneyRaise() {
         if (money_raise > 1)
             money_raise--;
+    }
+
+    function startRound() {
+        sendRequestPost(url_start + "?room_id=" + room_id + '&player_id=' + player_id, null);
+        button_ready.destroy();
     }
 
     /* _________________________________ TOOLS _________________________________ */

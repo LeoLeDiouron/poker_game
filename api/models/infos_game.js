@@ -2,29 +2,37 @@ var Deck = require('./deck');
 var Hand = require('./hand');
 var Round = require('./round');
 
-var algorithmCombination = require('../controllers/algorithm_combination');
-var compareCombination = require('../controllers/compare_combination');
+var algorithmCombination = require('../scripts/algorithm_combination');
+var compareCombination = require('../scripts/compare_combination');
+
+const name_of_card = ['2','3','4','5','6','7','8','9','10','jake','queen','king','ace']
 
 class InfosGame {
 
     constructor() {
-        this.deck = new Deck();
+        
         this.players = [];
         this.status = 0;
-        this.roundOver = false;
-        this.winner = "";
-        this.round = new Round(this.deck.giveCards(3));
+        this.is_started = false;
+
+        //this.deck = new Deck();
+        //this.status = 0;
+        //this.roundOver = false;
+        //this.round = new Round(this.deck.giveCards(3));
     }
 
     newRound() {
-        this.winner = "";
+        console.log('new round !');
         this.deck = new Deck();
+        this.status = 1;
+        this.is_started = true;
         this.roundOver = false;
         this.round = new Round(this.deck.giveCards(3));
         this.giveHands();
 
         this.players.forEach(player => {
             player.setFold(false);
+            player.setReady(true);
             player.setAction('waiting...');
         })
     }
@@ -33,8 +41,8 @@ class InfosGame {
         return this.status;
     }
 
-    increaseStatus() {
-        this.status++;
+    setStatus(status) {
+        this.status = status;
     }
 
     addPlayer(player) {
@@ -44,10 +52,6 @@ class InfosGame {
 
     getPlayers() {
         return this.players;
-    }
-
-    getWinner() {
-        return this.winner;
     }
 
     getPlayer(id) {
@@ -75,6 +79,38 @@ class InfosGame {
 
     isRoundOver() {
         return this.roundOver;
+    }
+
+    getWinnerInfos(winner_name) {
+        
+        if (this.round.getStatusWinner() == false) {
+            var combi = '';
+            var best_combination = this.getPlayer(winner_name).getBestCombination();
+
+            if (best_combination['type'] != 'double_pair')
+                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']-2];
+            else
+                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']['first_pair']-2] + ' / ' + name_of_card[best_combination['value']['second_pair']-2];
+
+            return {
+                'cards': this.getPlayer(winner_name).getHand().getCards(),
+                'combination': combi
+            };
+        } else {
+            return {};
+        }
+    }
+
+    checkPlayersReady() {
+        var ready = true;
+        if (this.players.length > 1) {
+            this.players.forEach(player => {
+                if (player.isReady() == false)
+                    ready = false;
+            });
+        }
+        if (ready == true)
+            this.newRound();
     }
 
     checkEndRound() {
@@ -110,10 +146,11 @@ class InfosGame {
         console.log('Winner is ' + winner_names);
         this.players.forEach(player => {
             if (player.getName() == winners[0].getName()) {
-                this.winner = player.getName();
+                this.round.setWinner(player.getName(), false);
                 player.addCash(this.round.getPot());
-                this.newRound();
+                this.status = 2;
             }
+            player.setReady(false);
         });
     }
 
@@ -129,11 +166,11 @@ class InfosGame {
             this.players.forEach(player => {
                 if (player.getFold() == false) {
                     console.log('Winner is ' + player.getName())
-                    this.winner = player.getName();
+                    this.round.setWinner(player.getName(), true);
                     player.addCash(this.round.getPot());
-                    this.newRound();
-                    return;
+                    this.status = 2;
                 }
+                player.setReady(false);
             })
             console.log('End of the round : only one player active');
             return true;

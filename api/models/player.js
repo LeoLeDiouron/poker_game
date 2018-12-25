@@ -10,7 +10,7 @@ class Player {
         this.is_ready = false;
         this.best_combination = {'type':'', 'value':0}
 
-        this.setAction('waiting...');
+        this.setAction('not ready');
     }
 
     setBet(bet) {
@@ -59,8 +59,12 @@ class Player {
         return this.is_ready;
     }
 
-    setReady() {
-        this.is_ready = true;
+    setReady(ready) {
+        if (ready == true)
+            this.setAction('ready');
+        else
+            this.setAction('not ready')
+        this.is_ready = ready;
     }
 
     addCash(cash_to_add) {
