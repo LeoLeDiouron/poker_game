@@ -2,11 +2,11 @@ const type_values = {
     "high_card" : 0,
     "pair" : 1,
     "double_pair" : 2,
-    "brelan" : 3,
+    "three_of_a_kind" : 3,
     "straight" : 4,
     "flush" : 5,
     "full" : 6,
-    "sqare" : 7,
+    "four_of_a_kind" : 7,
     "straight_flush" : 8,
     "royal_straight_flush" : 9
 }

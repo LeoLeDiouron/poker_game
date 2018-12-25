@@ -9,8 +9,9 @@ const name_of_card = ['2','3','4','5','6','7','8','9','10','jake','queen','king'
 
 class InfosGame {
 
-    constructor() {
+    constructor(id) {
         
+        this.id = id;
         this.players = [];
         this.status = 0;
         this.is_started = false;
@@ -22,7 +23,7 @@ class InfosGame {
     }
 
     newRound() {
-        console.log('new round !');
+        console.log('InfosGame[' + this.id + '] : new round');
         this.deck = new Deck();
         this.status = 1;
         this.is_started = true;
@@ -46,8 +47,16 @@ class InfosGame {
     }
 
     addPlayer(player) {
-        if (this.players.length < 6)
+        console.log('InfosGame[' + this.id + '] : new player (id : ' + player.getName() + ')');
+        if (this.players.length < 6 && this.is_started == false) {
             this.players.push(player);
+            return true;
+        }
+        else if (this.players.length >= 6)
+            console.log('InfosGame[' + this.id + '] : the maxium of number of players is reached (' + player.getName() + ' is not allowed)');
+        else if (this.is_started == true)
+            console.log('InfosGame[' + this.id + '] : the game is already started (' + player.getName() + ' is not allowed)');
+        return false;
     }
 
     getPlayers() {
@@ -59,7 +68,7 @@ class InfosGame {
         this.players.forEach(_player => {
             if (_player.getName() == id)
                 player = _player;
-        })
+        });
         return player;
     }
 
@@ -108,13 +117,14 @@ class InfosGame {
                 if (player.isReady() == false)
                     ready = false;
             });
+        } else {
+            ready = false;
         }
         if (ready == true)
             this.newRound();
     }
 
     checkEndRound() {
-        console.log('check End Round');
         if (this.checkPlayersFold() == true)
             return;
         if (this.players[this.round.getCurrentPlayer()].getBet() == this.round.getBet() && this.round.isCompletedStep() == true) {
@@ -142,8 +152,7 @@ class InfosGame {
             winner_names += winner.getName() + ' ';
         })
         winner_names = winner_names.substring(0, winner_names.length - 1);
-        console.log('End of the round : 5 cards');
-        console.log('Winner is ' + winner_names);
+        console.log('InfosGame[' + this.id + '] : end of the round (5 cards are given) - winner : ' + winner_names);
         this.players.forEach(player => {
             if (player.getName() == winners[0].getName()) {
                 this.round.setWinner(player.getName(), false);
@@ -165,14 +174,13 @@ class InfosGame {
             this.roundOver = true;
             this.players.forEach(player => {
                 if (player.getFold() == false) {
-                    console.log('Winner is ' + player.getName())
+                    console.log('InfosGame[' + this.id + '] : end of the round (only one player active) - winner : ' + player.getName());
                     this.round.setWinner(player.getName(), true);
                     player.addCash(this.round.getPot());
                     this.status = 2;
                 }
                 player.setReady(false);
             })
-            console.log('End of the round : only one player active');
             return true;
         }
         return false;

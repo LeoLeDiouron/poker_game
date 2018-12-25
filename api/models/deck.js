@@ -14,7 +14,7 @@ class Deck {
         })
         this.shuffle();
 
-        //this.giveBrelan();
+        this.giveBrelan();
         //this.showDeck();
     }
 
@@ -54,14 +54,14 @@ class Deck {
 
     giveBrelan() {
 
-        this.cards.push(new Card('diamond',3));
-        this.cards.push(new Card('diamond',5));
+        this.cards.push(new Card('heart',8));
+        this.cards.push(new Card('heart',5));
 
-        this.cards.push(new Card('diamond',4));
-        this.cards.push(new Card('club',3));
+        //this.cards.push(new Card('diamond',4));
+        //this.cards.push(new Card('club',3));
         
         this.cards.push(new Card('heart',3));
-        this.cards.push(new Card('spade',6));
+        this.cards.push(new Card('heart',6));
         this.cards.push(new Card('heart',4));
 
 
