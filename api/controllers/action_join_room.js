@@ -1,4 +1,3 @@
-
 var createId = require('../scripts/createId');
 var Player = require('../models/player');
 

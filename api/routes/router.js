@@ -1,10 +1,13 @@
 var get_infos_game = require('../controllers/get_infos_game');
 var action_new_room = require('../controllers/action_new_room');
 var action_join_room = require('../controllers/action_join_room');
+var action_random_room = require('../controllers/action_random_room');
 var action_follow = require('../controllers/action_follow');
 var action_fold = require('../controllers/action_fold');
 var action_raise = require('../controllers/action_raise');
 var action_start = require('../controllers/action_start');
+
+var find_avaible_room = require('../scripts/find_avaible_room');
 
 const express = require('express');
 const router = express.Router();
@@ -17,6 +20,10 @@ router.get('/new_room', (req, res) => {
 
 router.get('/join_room', (req, res) => {
     infos_games = action_join_room(req, res, infos_games);
+});
+
+router.get('/random_room', (req, res) => {
+    infos_games = action_random_room(req, res, infos_games, find_avaible_room(infos_games));
 });
 
 router.get('/infos_game', (req, res) => {

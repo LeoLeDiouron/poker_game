@@ -54,15 +54,18 @@ class Deck {
 
     giveBrelan() {
 
-        this.cards.push(new Card('heart',8));
+        this.cards.push(new Card('club',7));
+        this.cards.push(new Card('heart',3));
+
+        this.cards.push(new Card('diamond',3));
         this.cards.push(new Card('heart',5));
 
-        //this.cards.push(new Card('diamond',4));
-        //this.cards.push(new Card('club',3));
+        this.cards.push(new Card('heart',9));
+        this.cards.push(new Card('heart',10));
         
-        this.cards.push(new Card('heart',3));
         this.cards.push(new Card('heart',6));
-        this.cards.push(new Card('heart',4));
+        this.cards.push(new Card('heart',7));
+        this.cards.push(new Card('heart',8));
 
 
     }

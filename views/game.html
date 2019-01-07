@@ -18,18 +18,19 @@
     const colors = ['heart', 'diamond', 'club', 'spade'];
     const name_of_card = ['2','3','4','5','6','7','8','9','10','jake','queen','king','ace']
 
-    const url_api = 'http://localhost:3000/api/v1/';
-    //const url_api = 'http://192.168.1.13:3000/api/v1/';
+    //const url_api = 'http://localhost:3000/api/v1/';
+    const url_api = 'http://192.168.1.13:3000/api/v1/';
 
     const url_begin = url_api + 'new_room';
     const url_join = url_api + 'join_room';
+    const url_random = url_api + 'random_room';
     const url_infos_game = url_api + 'infos_game';
     const url_fold = url_api + 'fold';
     const url_follow = url_api + 'follow';
     const url_raise = url_api + 'raise';
     const url_start = url_api + 'start';
 
-    const small_text = 15;
+    const small_text = 20;
     const medium_text = 30;
     const big_text = 50;
 
@@ -41,6 +42,7 @@
 
     var button_new_game = null;
     var button_join_game = null;
+    var button_random_game = null;
     var button_validate_join = null;
     var button_fold = null;
     var button_follow = null;
@@ -59,6 +61,8 @@
     var gui_cards_hand = [];
     var gui_pot = null;
     
+    var text_title = null;
+    var text_author = null;
     var text_my_turn = null;
     var text_money_raise = null;
     var text_current_bet = null;
@@ -75,7 +79,7 @@
     var room_id = '';
     var player_id = '';
     var round_id = -1;
-    var cash = 0;
+    var cash = -1;
     var pot = 0;
     var best_combination = {'type':'', 'value':0};
 
@@ -90,6 +94,7 @@
         game.load.image('table', 'assets/images/poker_table.png');
         game.load.image('button_new_game', 'assets/images/button_new_game.png');
         game.load.image('button_join_game', 'assets/images/button_join_game.png');
+        game.load.image('button_random_game', 'assets/images/button_random_game.png');
         game.load.image('button_validate_join', 'assets/images/button_go.png');
         game.load.image('button_fold', 'assets/images/button_fold.png');
         game.load.image('button_follow', 'assets/images/button_follow.png');
@@ -105,21 +110,35 @@
     }
 
     function create () {
+
         background = game.add.image(0, 0, 'table');
         background.width = window.innerWidth;
         background.height = window.innerHeight;
+
+        text_title = game.add.bitmapText(0, 0, 'gem', 'POKER ONLINE', big_text);
+        text_author = game.add.bitmapText(0, 0, 'gem', 'by Leo Le Diouron', small_text);
         button_new_game = game.add.button(0,0, 'button_new_game', createRoom);
         button_join_game = game.add.button(0,0, 'button_join_game', askRoomId);
+        button_random_game = game.add.button(0,0, 'button_random_game', randomRoom);
+        
+        text_title.centerX = innerWidth / 2;
+        text_title.centerY = innerHeight / 2 - text_title.height * 3;
+        text_author.centerX = innerWidth / 2;
+        text_author.centerY = innerHeight - text_author.height * 3;
         button_new_game.centerX = innerWidth / 2;
-        button_new_game.centerY = innerHeight / 2 - button_new_game.height;
+        button_new_game.centerY = innerHeight / 2;
         button_join_game.centerX = innerWidth / 2;
-        button_join_game.centerY = innerHeight / 2 + button_join_game.height;
+        button_join_game.centerY = innerHeight / 2 + button_join_game.height * 2;
+        button_random_game.centerX = innerWidth / 2;
+        button_random_game.centerY = innerHeight / 2 + button_join_game.height * 4;
+       
     }
 
     function update () {
         if (idx_frame % 30 == 0 && player_id != '') {
             var response = sendRequestGet(url_infos_game + "?room_id=" + room_id + '&player_id=' + player_id);
             my_turn = false;
+            //console.log(JSON.stringify(response));
             // TODO : faire un system de responsive en fonction de la taille de la fenetre
             updateDatas(response);
             if (round_id != response['round_id'])
@@ -141,24 +160,27 @@
         room_id = response['room_id'];
         player_id = response['player_id'];
         cash = response['cash'];
-        button_new_game.destroy();
-        button_join_game.destroy();
+        clearMenu();
         displayInfosRoom();
     }
 
     function joinRoom(_room_id) {
         var response = sendRequestGet(url_join + '?room_id=' + _room_id);
-        room_id = response['room_id'];
-        player_id = response['player_id'];
-        cash = response['cash'];
-        button_validate_join.destroy();
-        input_room_id.destroy();
-        displayInfosRoom();
+        console.log('error' in response);
+        if ('error' in response) {
+            //
+        } else {
+            room_id = response['room_id'];
+            player_id = response['player_id'];
+            cash = response['cash'];
+            button_validate_join.destroy();
+            input_room_id.destroy();
+            displayInfosRoom();
+        }
     }
 
     function askRoomId() {
-        button_new_game.destroy();
-        button_join_game.destroy();
+        clearMenu();
         input_room_id = game.add.inputField(0, 0, { width: 150, padding: 8 });
         button_validate_join = game.add.button(0, 0, 'button_validate_join');
         input_room_id.centerX = window.innerWidth / 2;
@@ -168,6 +190,28 @@
         button_validate_join.events.onInputDown.add(function() {
             joinRoom(input_room_id.value);
         });
+    }
+
+    function randomRoom() {
+        var response = sendRequestGet(url_random);
+        console.log('error' in response);
+        if ('error' in response) {
+            //
+        } else {
+            room_id = response['room_id'];
+            player_id = response['player_id'];
+            cash = response['cash'];
+            clearMenu();
+            displayInfosRoom();
+        }
+    }
+
+    function clearMenu() {
+        text_title.destroy();
+        text_author.destroy();
+        button_new_game.destroy();
+        button_join_game.destroy();
+        button_random_game.destroy();
     }
 
     /*  _________________________________ DISPLAY GAME _________________________________ */
@@ -268,8 +312,11 @@
         players.forEach(_player => {
             if (_player.id != player_id) {
                 var action = _player.action;
-                if ('round' in response && _player.id == response['round']['current_player'])
+                //console.log('-> status : ' + response['status']);
+                /*if ('round' in response && response['status'] == 1 && _player.id == response['round']['current_player']) {
+                    console.log('what ??');
                     action = ' : playing...';
+                }*/
                 gui_players.push(game.add.bitmapText(padding, window.innerHeight - (players.length * 60) + position, 'gem', _player.id + ' (' + _player.cash + ')' + _player.action, medium_text));
                 position += 60;
             }
@@ -282,29 +329,37 @@
             if (text_best_combination != null)
                 text_best_combination.destroy();
             best_combination = response['best_combination'];
+
             var combi = '';
-            if (best_combination['type'] != 'double_pair')
-                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']-2];
+            if (best_combination['type'] == 'double_pair' || best_combination['type'] == 'full')
+                combi = best_combination['type'] + ' of ' + name_of_card[best_combination['value'][0]-2] + ' / ' + name_of_card[best_combination['value'][1]-2];
+            else if (best_combination['type'] == 'flush' || best_combination['type'] == 'straight_flush')
+                combi = best_combination['type'] + ' of ' + best_combination['value']['color'];
             else
-                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']['first_pair']-2] + ' / ' + name_of_card[best_combination['value']['second_pair']-2];
+                combi = best_combination['type'] + ' of ' + name_of_card[best_combination['value']-2];
+
+            while (combi.indexOf('_') != -1)
+                combi = combi.replace('_', ' ');
+
             text_best_combination = game.add.bitmapText(window.innerWidth / 2 - 200, window.innerHeight - 400, 'gem', 'your best combination is : ' + combi, medium_text);
-            //console.log('window x : ' + window.innerHeight / 2 + ' -> text width : ' + text_best_combination.width / 2);
             text_best_combination.centerX = window.innerWidth / 2;
         }
     }
 
     function displayStartRound() {
         if (button_ready == null) {
-            button_ready = game.add.button(window.innerWidth / 2, window.innerHeight - 200, 'button_ready', startRound);
+            button_ready = game.add.button(0, window.innerHeight * 0.8, 'button_ready', startRound);
+            button_ready.centerX = window.innerWidth / 2;
         }
     }
 
     function displayEnd(response) {
 
-        if (text_my_turn != null) {
+        if (text_my_turn != null)
             text_my_turn.destroy();
-            text_my_turn = null;
-        }
+        
+        if (text_best_combination != null)
+            text_best_combination.destroy();
 
         button_follow.destroy();
         button_fold.destroy();
@@ -313,10 +368,11 @@
         plus.destroy();
         text_money_raise.destroy();
         text_current_bet.destroy();
-        text_best_combination.destroy();
-        gui_cards_board.forEach(gui_card_board => { gui_card_board.destroy(); });
-        gui_cards_hand.forEach(gui_card__hand => { gui_card__hand.destroy(); });
 
+        gui_cards_board.forEach(gui_card_board => { gui_card_board.destroy(); });
+        gui_cards_hand.forEach(gui_card_hand => { gui_card_hand.destroy(); });
+
+        text_my_turn = null;
         button_follow = null;
         button_fold = null;
         button_raise = null;
@@ -329,11 +385,16 @@
         gui_cards_hand = [];
 
         if (text_winner == null && text_winner_2 == null) {
-            text_winner = game.add.bitmapText(window.innerWidth/2 - 150, window.innerHeight/2 - 100, 'gem', response['round']['winner']['name'] + ' won the round', big_text);
+            text_winner = game.add.bitmapText(0, 0, 'gem', response['round']['winner']['name'] + ' won the round', big_text);
             if ('combination' in response['round']['winner'])
-                text_winner_2 = game.add.bitmapText(window.innerWidth/2 - 150, window.innerHeight/2 + 50, 'gem', 'with a ' + response['round']['winner']['combination'], medium_text);
+                text_winner_2 = game.add.bitmapText(0, 0, 'gem', 'with a ' + response['round']['winner']['combination'], medium_text);
             else
-                text_winner_2 = game.add.bitmapText(window.innerWidth/2 - 150, window.innerHeight/2 + 50, 'gem', 'because he is the last player', medium_text); 
+                text_winner_2 = game.add.bitmapText(0, 0, 'gem', 'because he is the last player', medium_text);
+            
+            text_winner.centerX = window.innerWidth / 2;
+            text_winner.centerY = window.innerHeight / 2 - text_winner.height / 2;
+            text_winner_2.centerX = window.innerWidth / 2;
+            text_winner_2.centerY = window.innerHeight / 2 + text_winner_2.height;
         }
 
         is_end = true;
@@ -347,12 +408,15 @@
         displayCurrentBet(response);
         displayBestCombination(response);
 
-        if (response['round']['pot'] != pot) {
+        if (response['status'] == 1 && response['round']['pot'] != pot) {
             if (gui_pot != null)
                 gui_pot.destroy();
             pot = response['round']['pot'];
             gui_pot = game.add.bitmapText(padding, 50, 'gem', 'pot : ' + pot, medium_text);
+        } else if (response['status'] == 2 && gui_pot != null) {
+            gui_pot.destroy();
         }
+
         if (text_my_turn != null && my_turn == false) {
             text_my_turn.destroy();
             text_my_turn = null;
@@ -392,21 +456,18 @@
 
     function fold() {
         if (my_turn == true) {
-            console.log('I fold !');
             sendRequestPost(url_fold  + "?room_id=" + room_id + '&player_id=' + player_id, null);
         }
     }
 
     function follow() {
         if (my_turn == true) {
-            console.log('I follow !');
             sendRequestPost(url_follow  + "?room_id=" + room_id + '&player_id=' + player_id, null);
         }
     }
 
     function raise() {
         if (my_turn == true) {
-            console.log('I raise by ' + money_raise + '!');
             sendRequestPost(url_raise  + "?room_id=" + room_id + '&player_id=' + player_id + '&raise=' + money_raise, null);
             money_raise = 1;
         }
@@ -432,27 +493,27 @@
     function sendRequestGet(url) {
         const req = new XMLHttpRequest();
         
-        req.open('GET', url, false);
-        req.send(null);
-        return JSON.parse(req.response);
+        if (req.status == 0) {
+            req.open('GET', url, false);
+            req.send(null);
+            return JSON.parse(req.response);
+        } else {
+            return {'error':true};
+        }
     }
 
     function sendRequestPost(url, body) {
         const req = new XMLHttpRequest();
         
-        req.open('POST', url, false);
-        req.send(body);
-        return;
-    }
-
-    // TODO : generic function
-    function moveGuiRoom() {
-        if (gui_room_id != null) {
-            gui_room_id.x += 2;
-            if (gui_room_id.x == 800)
-                gui_room_id.x = 0;
+        if (req.status == 0) {
+            req.open('POST', url, false);
+            req.send(body);
+            return JSON.parse(req.response);
+        } else {
+            return {'error':true};
         }
     }
+
 </script>
 
 </body>

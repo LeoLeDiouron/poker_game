@@ -11,6 +11,8 @@ function algorithmCombination(cards_board, cards_hand) {
             if (four_of_a_kind != 0) {
                 result = {'type': 'four_of_a_kind', 'value': four_of_a_kind};
             } else {
+                //var full = checkFull(cards_board, cards_hand);
+                //if (full)
                 result = {'type': 'three_of_a_kind', 'value': three_of_a_kind};
             }
         } else {
@@ -22,18 +24,18 @@ function algorithmCombination(cards_board, cards_hand) {
             }
         }
     } else {
-        var high_card = checkHighCard(cards_hand);
-        result = {'type': 'high_card', 'value': high_card};
-    }
-
-    var flush = checkFlush(cards_board, cards_hand);
-    if (flush.length > 0) {
-        result = {'type': 'flush', 'value': flush};
-    } else {
         var straight = checkStraight(cards_board, cards_hand);
         if (straight != 0) {
             result = {'type': 'straight', 'value': straight};
+        } else {
+            var high_card = checkHighCard(cards_hand);
+            result = {'type': 'high_card', 'value': high_card};
         }
+    }
+
+    var flush = checkFlush(cards_board, cards_hand);
+    if (flush['values'].length > 0) {
+        result = {'type': 'flush', 'value': flush};
     }
 
     return result;
@@ -101,7 +103,7 @@ function checkDoublePair(cards_board, cards_hand) {
 }
 
 function checkFlush(cards_board, cards_hand) {
-    var flush = [];
+    var flush = {'color'  :'', 'values' : []};
     var colors_occurences = {
         'club':0,
         'spade':0,
@@ -118,7 +120,7 @@ function checkFlush(cards_board, cards_hand) {
 
     for(color in colors_occurences) {
         if (colors_occurences[color] >= 5) {
-            console.log('color 5: ' + color);
+            flush['color'] = color;
             cards_board.forEach(card_board => {
                 if (card_board.getColor() == color)
                     flush = insertFlush(flush, card_board.getValue());
@@ -135,7 +137,28 @@ function checkFlush(cards_board, cards_hand) {
 
 function checkStraight(cards_board, cards_hand) {
     var straight = 0;
+    var min = 15;
+    var max = 0;
 
+    console.log('STRAIGHT');
+
+    cards_board.forEach(card_board => {
+        if (card_board.getValue() > max)
+            max = card_board.getValue();
+        if (card_board.getValue() < min)
+            min = card_board.getValue();
+    });
+    cards_hand.forEach(card_hand => {
+        if (card_hand.getValue() > max)
+            max = card_hand.getValue();
+        if (card_hand.getValue() < min)
+            min = card_hand.getValue();
+    });
+
+    console.log('Max : ' + max + ' , min : ' + min);
+
+    if (max - min == 4)
+        straight = max;
     return straight;
 }
 
@@ -167,15 +190,15 @@ function checkFourOfAKind(cards_board, cards_hand) {
 /*  _________________________________ SCRIPTS _________________________________ */
 
 function insertFlush(flush, value) {
-    var initial_length = flush.length;
+    var initial_length = flush['values'].length;
     for (var i = 0; i < initial_length; i++) {
-        if (flush[i] < value) {
-           flush.splice(i, 0, value);
+        if (flush['values'][i] < value) {
+           flush['values'].splice(i, 0, value);
            break;
         }
     }
-    if (flush.length == initial_length)
-        flush.push(value);
+    if (flush['values'].length == initial_length)
+        flush['values'].push(value);
     return flush;
 }
 

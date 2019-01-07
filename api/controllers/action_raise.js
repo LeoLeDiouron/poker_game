@@ -3,7 +3,7 @@ function action_raise(req, res, infos_games) {
     var player_id = req.query.player_id;
     var raise = parseInt(req.query.raise);
 
-    if (infos_games[room_id].isRoundOver() == false && infos_games[room_id].getPlayers()[infos_games[room_id].getRound().getCurrentPlayer()].getName() == player_id) {
+    if (infos_games[room_id].getStatus() == 1 && infos_games[room_id].getPlayers()[infos_games[room_id].getRound().getCurrentPlayer()].getName() == player_id) {
         var bet = infos_games[room_id].getRound().getBet() - infos_games[room_id].getPlayer(player_id).getBet() + raise;
         if (infos_games[room_id].getPlayer(player_id).increaseBet(bet) == true) {
             infos_games[room_id].getRound().increaseBet(raise);

@@ -2,33 +2,28 @@ var Deck = require('./deck');
 var Hand = require('./hand');
 var Round = require('./round');
 
-var algorithmCombination = require('../scripts/algorithm_combination');
+var algorithmCombination = require('../scripts/algorithm_combi');
 var compareCombination = require('../scripts/compare_combination');
 
 const name_of_card = ['2','3','4','5','6','7','8','9','10','jake','queen','king','ace']
 
 class InfosGame {
 
-    constructor(id) {
-        
+    constructor(id) {      
         this.id = id;
         this.players = [];
         this.status = 0;
-        this.is_started = false;
-
-        //this.deck = new Deck();
-        //this.status = 0;
-        //this.roundOver = false;
-        //this.round = new Round(this.deck.giveCards(3));
+        this.first_player = 0;
     }
 
     newRound() {
         console.log('InfosGame[' + this.id + '] : new round');
         this.deck = new Deck();
         this.status = 1;
-        this.is_started = true;
-        this.roundOver = false;
-        this.round = new Round(this.deck.giveCards(3));
+        this.round = new Round(this.deck.giveCards(3), this.first_player);
+        this.first_player++;
+        if (this.first_player == this.players.length)
+            this.first_player = 0;
         this.giveHands();
 
         this.players.forEach(player => {
@@ -36,25 +31,39 @@ class InfosGame {
             player.setReady(true);
             player.setAction('waiting...');
         })
+
+        this.players = this.round.setBlind(this.players);
+    }
+
+    endRound() {
+        console.log('InfosGame[' + this.id + '] : end of the round');
+        this.status = 2;
+        this.players.forEach(player => {
+            player.setAction('not ready');
+            player.setReady(false);
+        })
+    }
+
+    isAvaible() {
+        if (this.status == 1) 
+            return false;
+        else
+            return true;
     }
 
     getStatus() {
         return this.status;
     }
 
-    setStatus(status) {
-        this.status = status;
-    }
-
     addPlayer(player) {
         console.log('InfosGame[' + this.id + '] : new player (id : ' + player.getName() + ')');
-        if (this.players.length < 6 && this.is_started == false) {
+        if (this.players.length < 6 && this.status != 1) {
             this.players.push(player);
             return true;
         }
         else if (this.players.length >= 6)
             console.log('InfosGame[' + this.id + '] : the maxium of number of players is reached (' + player.getName() + ' is not allowed)');
-        else if (this.is_started == true)
+        else if (this.status == 1)
             console.log('InfosGame[' + this.id + '] : the game is already started (' + player.getName() + ' is not allowed)');
         return false;
     }
@@ -86,20 +95,21 @@ class InfosGame {
         })
     }
 
-    isRoundOver() {
-        return this.roundOver;
-    }
-
     getWinnerInfos(winner_name) {
         
         if (this.round.getStatusWinner() == false) {
-            var combi = '';
             var best_combination = this.getPlayer(winner_name).getBestCombination();
-
-            if (best_combination['type'] != 'double_pair')
-                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']-2];
+            var combi = '';
+            
+            if (best_combination['type'] == 'double_pair' || best_combination['type'] == 'full')
+                combi = best_combination['type'] + ' of ' + name_of_card[best_combination['value'][0]-2] + ' / ' + name_of_card[best_combination['value'][1]-2];
+            else if (best_combination['type'] == 'flush' || best_combination['type'] == 'straight_flush')
+                combi = best_combination['type'] + ' of ' + best_combination['value']['color'];
             else
-                combi = best_combination['type'].replace('_',' ') + ' of ' + name_of_card[best_combination['value']['first_pair']-2] + ' / ' + name_of_card[best_combination['value']['second_pair']-2];
+                combi = best_combination['type'] + ' of ' + name_of_card[best_combination['value']-2];
+
+            while (combi.indexOf('_') != -1)
+                combi = combi.replace('_', ' ');
 
             return {
                 'cards': this.getPlayer(winner_name).getHand().getCards(),
@@ -132,7 +142,8 @@ class InfosGame {
                 this.round.nextStep(this.players, this.deck.giveCards(1));
                 this.players.forEach(player => {
                     player.setBestCombination(algorithmCombination(this.round.getBoard().getCards(), player.getHand().getCards()));
-                })
+                });
+                this.round.resetFirstPlayer(this.players);
             }
             else {
                 this.comparisonEndRound();
@@ -146,7 +157,6 @@ class InfosGame {
     comparisonEndRound() {
         var winners = compareCombination(this.players);
         var winner_names = '';
-        this.roundOver = true;
 
         winners.forEach(winner => {
             winner_names += winner.getName() + ' ';
@@ -157,10 +167,9 @@ class InfosGame {
             if (player.getName() == winners[0].getName()) {
                 this.round.setWinner(player.getName(), false);
                 player.addCash(this.round.getPot());
-                this.status = 2;
             }
-            player.setReady(false);
         });
+        this.endRound();
     }
 
     checkPlayersFold() {
@@ -171,16 +180,14 @@ class InfosGame {
                 nb_players_active++;
         });
         if (nb_players_active == 1) {
-            this.roundOver = true;
             this.players.forEach(player => {
                 if (player.getFold() == false) {
                     console.log('InfosGame[' + this.id + '] : end of the round (only one player active) - winner : ' + player.getName());
                     this.round.setWinner(player.getName(), true);
                     player.addCash(this.round.getPot());
-                    this.status = 2;
                 }
-                player.setReady(false);
-            })
+            });
+            this.endRound();
             return true;
         }
         return false;

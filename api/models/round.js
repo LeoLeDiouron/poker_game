@@ -4,7 +4,7 @@ const BLIND = 2;
 
 class Round {
 
-    constructor(cards) {
+    constructor(cards, first_player) {
         this.id = Math.floor(Math.random() * 1000);
         this.board = new Board(cards);
         this.pot = 0;
@@ -12,7 +12,8 @@ class Round {
         this.completed_step = false;
         this.little_blind = BLIND / 2;
         this.big_blind = BLIND;
-        this.current_player = 0;
+        this.first_player = first_player;
+        this.current_player = first_player;
         this.winner = '';
         this.winner_last_player = false;
         this.bet = 0;
@@ -79,13 +80,35 @@ class Round {
         return this.current_player;
     }
 
-    nextPlayer(players) {
-        if (players.length - 1 > this.current_player) {
-            this.current_player++;
+    resetFirstPlayer(players) {
+        this.current_player = this.first_player;
+        if (players[this.current_player].getFold() == true)
+            this.nextPlayer(players);
+    }
+
+    setBlind(players) {
+        if (players.length == 2) {
+            var idx_player_blind = (this.current_player == 0) ? 1 : 0;
+            players[idx_player_blind].increaseBet(this.big_blind);
+            this.bet = this.big_blind;
+            this.pot = this.big_blind;
         } else {
-            this.completed_step = true;
-            this.current_player = 0;
+            var idx_player_big_blind = (this.current_player == 0) ? players.length - 1 : this.current_player - 1;
+            var idx_player_little_blind = (idx_player_big_blind == 0) ? players.length - 1 : idx_player_big_blind - 1;
+            players[idx_player_big_blind].increaseBet(this.big_blind);
+            players[idx_player_little_blind].increaseBet(this.little_blind);
+            this.bet = this.big_blind;
+            this.pot = this.little_blind + this.big_blind;
         }
+        return players;
+    }
+
+    nextPlayer(players) {
+        this.current_player++;
+        if (this.current_player == players.length)
+            this.current_player = 0;
+        if (this.current_player == this.first_player)
+            this.completed_step = true;
         if (players[this.current_player].getFold() == true)
             this.nextPlayer(players);
     }
