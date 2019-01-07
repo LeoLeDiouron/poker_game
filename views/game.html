@@ -48,6 +48,7 @@
     var button_follow = null;
     var button_raise = null;
     var button_ready = null;
+    var button_return_menu = null;
 
     var plus = null;
     var minus = null;
@@ -69,6 +70,7 @@
     var text_best_combination = null;
     var text_winner = null;
     var text_winner_2 = null;
+    var text_error = null;
 
     var background = null;
 
@@ -91,6 +93,8 @@
     function preload () {
         console.log(window.innerWidth + ' -> ' +  window.innerHeight);
         game.add.plugin(PhaserInput.Plugin);
+
+        // TODO : FACTORISE THIS
         game.load.image('table', 'assets/images/poker_table.png');
         game.load.image('button_new_game', 'assets/images/button_new_game.png');
         game.load.image('button_join_game', 'assets/images/button_join_game.png');
@@ -100,6 +104,7 @@
         game.load.image('button_follow', 'assets/images/button_follow.png');
         game.load.image('button_raise', 'assets/images/button_raise.png');
         game.load.image('button_ready', 'assets/images/button_ready.png');
+        game.load.image('button_return_menu', 'assets/images/button_return_menu.png');
         game.load.image('plus', 'assets/images/plus.png');
         game.load.image('minus', 'assets/images/minus.png');
         game.load.bitmapFont('gem', 'assets/fonts/gem.png', 'assets/fonts/gem.xml');
@@ -136,13 +141,18 @@
 
     function update () {
         if (idx_frame % 30 == 0 && player_id != '') {
-            var response = sendRequestGet(url_infos_game + "?room_id=" + room_id + '&player_id=' + player_id);
-            my_turn = false;
-            //console.log(JSON.stringify(response));
-            // TODO : faire un system de responsive en fonction de la taille de la fenetre
-            updateDatas(response);
-            if (round_id != response['round_id'])
-                round_id = response['round_id'];
+            var req = sendRequestGet(url_infos_game + "?room_id=" + room_id + '&player_id=' + player_id);
+            if (req.status == 200) {
+                var response = JSON.parse(req.response);
+                my_turn = false;
+                //console.log(JSON.stringify(response));
+                // TODO : faire un system de responsive en fonction de la taille de la fenetre
+                updateDatas(response);
+                if (round_id != response['round_id'])
+                    round_id = response['round_id'];
+            } else {
+                console.log('Error API in update : ' + req.status);
+            }
         }
         if (text_money_raise != null) {
             text_money_raise.destroy();
@@ -156,26 +166,35 @@
     /* _________________________________ INITIALIZATION OF THE ROOM  _________________________________ */
 
     function createRoom() {
-        var response = sendRequestGet(url_begin);
-        room_id = response['room_id'];
-        player_id = response['player_id'];
-        cash = response['cash'];
-        clearMenu();
-        displayInfosRoom();
+        var req = sendRequestGet(url_begin);
+        var response = JSON.parse(req.response);
+        if (req.status == 200) {
+            room_id = response['room_id'];
+            player_id = response['player_id'];
+            cash = response['cash'];
+            clearMenu();
+            displayInfosRoom();
+        } else {
+            displayErrorMessage(response);
+        }
     }
 
     function joinRoom(_room_id) {
-        var response = sendRequestGet(url_join + '?room_id=' + _room_id);
-        console.log('error' in response);
-        if ('error' in response) {
-            //
-        } else {
+        var req = sendRequestGet(url_join + '?room_id=' + _room_id);
+        var response = JSON.parse(req.response);
+        if (req.status == 200) {
             room_id = response['room_id'];
             player_id = response['player_id'];
             cash = response['cash'];
             button_validate_join.destroy();
             input_room_id.destroy();
+            if (text_error != null) {
+                text_error.destroy();
+                text_error = null;
+            }
             displayInfosRoom();
+        } else {
+            displayErrorMessage(response);
         }
     }
 
@@ -183,26 +202,32 @@
         clearMenu();
         input_room_id = game.add.inputField(0, 0, { width: 150, padding: 8 });
         button_validate_join = game.add.button(0, 0, 'button_validate_join');
+        button_return_menu = game.add.button(0, 0, 'button_return_menu');
         input_room_id.centerX = window.innerWidth / 2;
         input_room_id.centerY = window.innerHeight / 2 - input_room_id.height;
         button_validate_join.centerX = window.innerWidth / 2;
         button_validate_join.centerY = window.innerHeight / 2 + button_validate_join.height;
+        button_return_menu.centerX = window.innerWidth / 2;
+        button_return_menu.centerY = window.innerHeight / 2 + button_return_menu.height * 3;
         button_validate_join.events.onInputDown.add(function() {
             joinRoom(input_room_id.value);
+        });
+        button_return_menu.events.onInputDown.add(function() {
+            create();
         });
     }
 
     function randomRoom() {
-        var response = sendRequestGet(url_random);
-        console.log('error' in response);
-        if ('error' in response) {
-            //
-        } else {
+        var req = sendRequestGet(url_random);
+        var response = JSON.parse(req.response);
+        if (req.status == 200) {
             room_id = response['room_id'];
             player_id = response['player_id'];
             cash = response['cash'];
             clearMenu();
             displayInfosRoom();
+        } else {
+            displayErrorMessage(response);
         }
     }
 
@@ -212,6 +237,20 @@
         button_new_game.destroy();
         button_join_game.destroy();
         button_random_game.destroy();
+        if (text_error != null) {
+            text_error.destroy();
+            text_error = null;
+        }
+    }
+
+    function displayErrorMessage(response) {
+        if (text_error != null) {
+            text_error.destroy();
+            text_error = null;
+        }
+        text_error = game.add.bitmapText(0, 0, 'gem', 'error : ' + response['error_message'], medium_text);
+        text_error.centerX = window.innerWidth/2;
+        text_error.centerY = window.innerHeight - text_error.height * 5;
     }
 
     /*  _________________________________ DISPLAY GAME _________________________________ */
@@ -492,26 +531,16 @@
 
     function sendRequestGet(url) {
         const req = new XMLHttpRequest();
-        
-        if (req.status == 0) {
-            req.open('GET', url, false);
-            req.send(null);
-            return JSON.parse(req.response);
-        } else {
-            return {'error':true};
-        }
+        req.open('GET', url, false);
+        req.send(null);
+        return req;
     }
 
     function sendRequestPost(url, body) {
         const req = new XMLHttpRequest();
-        
-        if (req.status == 0) {
-            req.open('POST', url, false);
-            req.send(body);
-            return JSON.parse(req.response);
-        } else {
-            return {'error':true};
-        }
+        req.open('POST', url, false);
+        req.send(null);
+        return body;
     }
 
 </script>
