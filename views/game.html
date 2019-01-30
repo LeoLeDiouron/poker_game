@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <title>POKER</title>
     <script src="./phaser.min.js"></script>
-    <script src="node_modules/@orange-games/phaser-input/build/phaser-input.js"></script>
+    <script src="./phaser-input.js"></script>
     <style type="text/css">
         body {
             margin: 0;
@@ -92,7 +92,6 @@
     /*  _________________________________ PHASER FUNCTIONS _________________________________ */
 
     function preload () {
-        console.log(window.innerWidth + ' -> ' +  window.innerHeight);
         game.add.plugin(PhaserInput.Plugin);
 
         // TODO : FACTORISE THIS
