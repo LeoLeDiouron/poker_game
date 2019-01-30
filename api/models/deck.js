@@ -14,7 +14,7 @@ class Deck {
         })
         this.shuffle();
 
-        this.giveBrelan();
+        //this.giveBrelan();
         //this.showDeck();
     }
 
