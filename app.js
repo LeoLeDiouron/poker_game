@@ -1,4 +1,4 @@
-const port = 3000; 
+const port = process.env.PORT || 8080; 
 const express = require('express');
 const app = express();
 
@@ -11,6 +11,4 @@ app.use(express.static(root_path));
 app.use('/', router_server);
 app.use('/api/v1', router_api);
 
-app.listen(port, function() {
-    console.log("Server running at: http://localhost:" + port)
-});
+app.listen(port);
